@@ -1,0 +1,17 @@
+:root {
+    --default-width: clamp(340px, 70vw, 480px);
+}
+
+input {
+    width: calc(var(--default-width) - 8px);
+}
+
+.numpad {
+    width: var(--default-width);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+}
+
+button.operator.active {
+    background-color: yellow;
+}
