@@ -112,8 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const solve = () => {
         accumulator = parseFloat(accumulator.replaceAll(",", ""));
         pending = parseFloat(pending.replaceAll(",", ""));
-        let newNum = ops[operation](accumulator, pending);
-        let symbol = symbols[operation];
+        let newNum = ops[operation].fn(accumulator, pending);
+        let symbol = ops[operation].symbol;
         if (!Number.isInteger(newNum)) newNum = newNum.toFixed(10);
         history.textContent = `${accumulator} ${symbol} ${pending} =`;
         accumulator = newNum.toString();
