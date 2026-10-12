@@ -1,62 +1,80 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    let history = document.querySelector('div.history');
-    let displayed = document.querySelector('input[name="current"]');
-    let current = "";
-    let adjust = "";
+    const history = document.querySelector('div.history');
+    const displayed = document.querySelector('input[name="accumulator"]');
+    let accumulator = "";
+    let pending = "";
     let operation = null;
-    let decimal = false;
+
+    const ops = {
+        add: { fn: (a, b) => a + b, symbol: '+' },
+        subtract: { fn: (a, b) => a - b, symbol: '-' },
+        multiply: { fn: (a, b) => a * b, symbol: '*' },
+        divide: { fn: (a, b) => a / b, symbol: '/' },
+        rand: {
+            fn: (a, b) => {
+                const min = Math.ceil(Math.min(a, b)), max = Math.min(Math.max(a, b));
+                return Math.floor(Math.random() * (max - min) + min);
+            }, symbol: '...?...'
+        },
+        exp: { fn: (a, b) => a ** b, symbol: '^' },
+        round: {
+            fn: (a, b) => {
+                const multiplier = 10 ** b;
+                return Math.round(a * multiplier) / multiplier;
+            }, symbol: 'rounded to'
+        }
+    }
 
     const cleanUp = () => {
-        adjust = "";
+        pending = "";
         operation = null;
-        decimal = false;
-        displayed.value = current;
+        displayed.value = accumulator;
         if (document.querySelector('button.active')) document.querySelector('button.active').classList.remove('active');
     }
 
     const clearInputs = () => {
         if (displayed.value !== "" && displayed.value !== "0") {
-            if (adjust !== "" && adjust !== "0") {
-                adjust = "";
+            if (pending !== "" && pending !== "0") {
+                pending = "";
             } else {
-                current = "";
+                accumulator = "";
                 operation = null;
             }
             displayed.value = "";
         } else {
-            current = "";
-            adjust = "";
+            accumulator = "";
+            pending = "";
             operation = null;
         }
-        decimal = false;
         if (document.querySelector('button.active')) document.querySelector('button.active').classList.remove('active');
     }
 
     const addDecimal = () => {
-        if (!decimal) {
-            if (!operation) {
-                current = current + ".";
-                displayed.value = current;
-            } else {
-                adjust = adjust + ".";
-                displayed.value = adjust;
+        if (!operation) {
+            if (!accumulator.includes('.')) {
+                accumulator = accumulator + ".";
+                displayed.value = accumulator;
             }
-            decimal = true;
+        } else {
+            if (!pending.includes('.')) {
+                pending = pending + ".";
+                displayed.value = pending;
+            }
         }
     }
 
     const numInput = (char) => {
         if (!operation) {
-            current += char;
-            displayed.value = current;
+            accumulator += char;
+            displayed.value = accumulator;
         } else {
-            if (adjust === "0" && adjust === "") {
-                adjust = char;
+            if (pending === "0" || pending === "") {
+                pending = char;
             } else {
-                adjust += char;
+                pending += char;
             }
-            displayed.value = adjust;
+            displayed.value = pending;
         }
     }
 
@@ -70,13 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const backspace = () => {
         if (operation !== null) {
-            if (adjust !== "0" && adjust !== "") {
-                adjust = adjust.slice(0, -1);
+            if (pending !== "0" && pending !== "") {
+                pending = pending.slice(0, -1);
             }
-            displayed.value = adjust;
+            displayed.value = pending;
         } else {
-            current = current.slice(0, -1);
-            displayed.value = current;
+            accumulator = accumulator.slice(0, -1);
+            displayed.value = accumulator;
         }
     }
 
@@ -84,51 +102,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const nums = displayed.value.split(",");
         history.textContent = `The ${dir} of ${nums} is`
         if (dir === "max") {
-            current = Math.max(...nums);
+            accumulator = Math.max(...nums);
         } else {
-            current = Math.min(...nums);
+            accumulator = Math.min(...nums);
         }
         cleanUp();
     }
 
     const solve = () => {
-        let newNum = 0;
-        let symbol = "";
-        current = parseFloat(current.replaceAll(",", ""));
-        adjust = parseFloat(current.replaceAll(",", ""));
-        switch (operation) {
-            case "add":
-                newNum = current + adjust;
-                symbol = "+";
-                break;
-            case "subtract":
-                newNum = current - adjust;
-                symbol = "-";
-                break;
-            case "multiply":
-                newNum = current * adjust;
-                symbol = "*";
-                break;
-            case "divide":
-                newNum = current / adjust;
-                symbol = "/";
-                break;
-            case "rand":
-                let min = Math.ceil(Math.min(current, adjust));
-                let max = Math.floor(Math.max(current, adjust));
-                newNum = Math.floor(Math.random() * (max - min) + min);
-                symbol = "...?..."
-                break;
-            case "exp":
-                newNum = current ** adjust;
-                symbol = "^";
-                break;
-            default:
-                newNum = current;
-        }
-        if (! Number.isInteger(newNum)) newNum = newNum.toFixed(10);
-        history.textContent = `${current} ${symbol} ${adjust} =`;
-        current = newNum.toString();
+        accumulator = parseFloat(accumulator.replaceAll(",", ""));
+        pending = parseFloat(pending.replaceAll(",", ""));
+        let newNum = ops[operation](accumulator, pending);
+        let symbol = symbols[operation];
+        if (!Number.isInteger(newNum)) newNum = newNum.toFixed(10);
+        history.textContent = `${accumulator} ${symbol} ${pending} =`;
+        accumulator = newNum.toString();
         cleanUp();
     }
 
@@ -152,12 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('button.operator').forEach((operatorBtn) => {
         operatorBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (operatorBtn.id === "subtract" && !operation && !current) {
-                current += "-";
-                displayed.value = current;
-            } else if (operatorBtn.id === "subtract" && operation && !adjust) {
-                adjust += "-";
-                displayed.value = adjust;
+            if (operatorBtn.id === "subtract" && !operation && !accumulator) {
+                accumulator += "-";
+                displayed.value = accumulator;
+            } else if (operatorBtn.id === "subtract" && operation && !pending) {
+                pending += "-";
+                displayed.value = pending;
             } else {
                 chooseOp(operatorBtn.id);
             }
@@ -176,15 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('button.abs').addEventListener('click', (e) => {
         e.preventDefault();
-        history.textContent = `The absolute value of ${current} is`;
-        current = Math.abs(parseFloat(current));
-        cleanUp();
-    })
-
-    document.querySelector('button.round').addEventListener('click', (e) => {
-        e.preventDefault();
-        history.textContent = `${current} rounds to`;
-        current = Math.round(parseFloat(current)).toString();
+        history.textContent = `The absolute value of ${accumulator} is`;
+        accumulator = Math.abs(parseFloat(accumulator));
         cleanUp();
     })
 
@@ -201,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     displayed.addEventListener('keydown', (e) => {
         e.preventDefault();
         console.log(e.key);
-        const nums = new Set(['0','1','2','3','4','5','6','7','8','9']);
+        const nums = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
         const ops = new Set(['+', '*', '/', '^']);
         let op = "";
         if (nums.has(e.key)) {
@@ -229,17 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === "." || e.key === "Decimal") {
             addDecimal();
         } else if (e.key === ",") {
-            current += e.key;
-            displayed.value = current;
+            accumulator += e.key;
+            displayed.value = accumulator;
         } else if (e.key === "Backspace") {
             backspace();
         } else if (e.key === "-") {
-            if (!current && !operation) {
-                current += e.key;
-                displayed.value = current;
-            } else if (operation && !adjust) {
-                adjust += e.key;
-                displayed.value = adjust;
+            if (!accumulator && !operation) {
+                accumulator += e.key;
+                displayed.value = accumulator;
+            } else if (operation && !pending) {
+                pending += e.key;
+                displayed.value = pending;
             } else {
                 chooseOp('subtract');
             }
