@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const history = document.querySelector('div.history');
-    const displayed = document.querySelector('input[name="accumulator"]');
+    const displayed = document.querySelector('input[name="current"]');
     let accumulator = "";
     let pending = "";
     let operation = null;
